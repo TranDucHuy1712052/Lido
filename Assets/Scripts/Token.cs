@@ -2,18 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Token is a class that represent the 'horses'.
+/// </summary>
 public class Token {
 
-    public Transform tokenTransform;
-    public PlayerType tokenType;
-    public Transform originalSpawnNode;
+    #region var
+    public Transform tokenTransform;                    //
+    public PlayerType tokenType;                        //player that hold this token
+    public Transform originalSpawnNode;                 //the node that this token stand at the begining
     public SpawnNode originalSpawnNodeComponent;
-    public Transform parentNode;
+    public Transform parentNode;                        //the node (or 'tile') that this 'horse' is standing.
     public Vector3 originalScale;
     public TokenComponent tokenComponent;
 
     public TokenStatus tokenStatus;
+    #endregion
 
+    #region func
     public void SetParentNode(Transform _parentNode)
     {
         parentNode = _parentNode;
@@ -21,7 +27,7 @@ public class Token {
 
     public Node GetParentNodeComponent()
     {
-        if (tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
+        if (tokenStatus == TokenStatus.LOCKED)
             return null;
         return parentNode.GetComponent<Node>();
     }
@@ -35,7 +41,7 @@ public class Token {
 
         tokenTransform = _tokenTransform;
         tokenTransform.SetPositionAndRotation(originalSpawnNodeComponent.GetPosition(), Quaternion.identity);
-        tokenStatus = TokenStatus.LOCKED_IN_SPAWN;
+        tokenStatus = TokenStatus.LOCKED;
 
         originalScale = tokenTransform.localScale;
 
@@ -48,13 +54,13 @@ public class Token {
     {
         tokenTransform.SetPositionAndRotation(originalSpawnNodeComponent.GetPosition(), Quaternion.identity);
         SetParentNode(originalSpawnNode);
-        tokenStatus = TokenStatus.LOCKED_IN_SPAWN;
+        tokenStatus = TokenStatus.LOCKED;
     }
 
     public void Spawn()
     {
         SetParentNode(originalSpawnNodeComponent.nextNode);
-        tokenStatus = TokenStatus.FREE_TO_MOVE;
+        tokenStatus = TokenStatus.MOVEABLE;
     }
 
     public bool IsColliding()
@@ -64,7 +70,7 @@ public class Token {
 
     public void Interact()
     {
-        if(tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
+        if(tokenStatus == TokenStatus.LOCKED)
         {
             if(originalSpawnNodeComponent.interactable == true)
             {
@@ -73,7 +79,7 @@ public class Token {
             }
         }
 
-        if (tokenStatus == TokenStatus.FREE_TO_MOVE)
+        if (tokenStatus == TokenStatus.MOVEABLE)
         {
             if(GetParentNodeComponent().interactable == true)
             {
@@ -84,7 +90,7 @@ public class Token {
 
     public void Highlight()
     {
-        if (tokenStatus == TokenStatus.FREE_TO_MOVE)
+        if (tokenStatus == TokenStatus.MOVEABLE)
         {
             if (GetParentNodeComponent().interactable == true)
             {
@@ -95,7 +101,7 @@ public class Token {
 
     public void Unhighlight()
     {
-        if (tokenStatus == TokenStatus.FREE_TO_MOVE)
+        if (tokenStatus == TokenStatus.MOVEABLE)
         {
             if (GetParentNodeComponent().interactable == true)
             {
@@ -104,7 +110,13 @@ public class Token {
         }
     }
 
+    public void ShowArrow(bool isActive)
+    {
+        this.tokenTransform.GetChild(0).gameObject.SetActive(isActive);
+    }
+
+    #endregion
 }
 
 public enum PlayerType {BLUE, GREEN, RED, YELLOW}
-public enum TokenStatus {LOCKED_IN_SPAWN, FREE_TO_MOVE, WON}
+public enum TokenStatus {LOCKED, MOVEABLE, WON}

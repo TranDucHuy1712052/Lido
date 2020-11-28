@@ -24,18 +24,11 @@ public class DiceCube : MonoBehaviour {
         for (int i = 0; i < iterations; i++)
         {
             while (randomValue == value)
-                randomValue = Random.Range(1, 7);
+                randomValue = Random.Range(1, 7);           //max number is exclusive (only 1-6)
             value = Random.Range(1, 7);
             for (int j = 0; j < 6; j++)
             {
-                if(j + 1 == value)
-                {
-                    faces[j].gameObject.SetActive(true);
-                }
-                else
-                {
-                    faces[j].gameObject.SetActive(false);
-                }
+                faces[j].gameObject.SetActive( (j+1 == value) );
             }
             yield return new WaitForSeconds(iterationDelay);
         }

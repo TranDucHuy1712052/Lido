@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Node that those 'horses' respawn when being kicked.
+/// Also the place when horses first stand, at the begining of game.
+/// </summary>
 public class SpawnNode : MonoBehaviour {
 
     public Transform nextNode;
@@ -15,7 +19,7 @@ public class SpawnNode : MonoBehaviour {
         if (token == null)
             return;
 
-        if(token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
+        if(token.tokenStatus == TokenStatus.LOCKED)
         {
             token.tokenTransform.position = Vector3.Slerp(token.tokenTransform.position, GetPosition(), smoothness * Time.deltaTime);
         }
@@ -37,7 +41,9 @@ public class SpawnNode : MonoBehaviour {
     {
         if (interactable == true)
         {
-            GameManager.instance.StartCoroutine(GameManager.instance.PlayWithChosenToken(token));
+            if (this.nextNode.GetComponent<Node>().IsOccupied())
+                return;
+            GameManager.instance.StartCoroutine(GameManager.instance.PlayToken(token));
             interactable = false;
         }
     }

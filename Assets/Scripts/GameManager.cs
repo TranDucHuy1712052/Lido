@@ -20,6 +20,8 @@ public class GameManager : MonoBehaviour {
     }
     #endregion
 
+    #region vars
+
     [SerializeField]
     private static int _numberOfPlayers = 4;
     public static int NumberOfPlayers
@@ -89,29 +91,37 @@ public class GameManager : MonoBehaviour {
     public GameObject redLifeEffectPrefab;
     public GameObject yellowLifeEffectPrefab;
 
+    #endregion
+
     private void Start()
     {
         SetupGame();
     }
 
+
+    /// <summary>
+    /// Start the turn after rolling dice.
+    /// </summary>
     public void BeginTurn()
     {
-        int interactablesNumber = 0;
+        int interactableTokenCount = 0;             //variable that count the number of token that can be moved
         Node nextNode;
+
         foreach (Token token in currentPlayer.tokens)
         {
+
             //Ra 1 hoac 6 thi xuat co
-            if (token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN &&
+            if (token.tokenStatus == TokenStatus.LOCKED &&
                 IsSpawnable(dice.value) )      
             {
                 token.originalSpawnNodeComponent.interactable = true;
                 token.tokenTransform.GetChild(0).gameObject.SetActive(true);
-                interactablesNumber++;
+                interactableTokenCount++;
                 continue;
             }
 
-            //Neu di chuyen duoc => 
-            if(token.tokenStatus == TokenStatus.FREE_TO_MOVE)
+            //Neu di chuyen duoc
+            if(token.tokenStatus == TokenStatus.MOVEABLE)
             {
                 nextNode = token.GetParentNodeComponent();
                 for (int i = 1; i <= dice.value; i++)
@@ -126,38 +136,50 @@ public class GameManager : MonoBehaviour {
                 {
                     token.GetParentNodeComponent().interactable = true;
                     token.tokenTransform.GetChild(0).gameObject.SetActive(true);
-                    interactablesNumber++;
+                    interactableTokenCount++;
                 }
             }
         }
 
         //Neu khong co quan nao di chuyen dc => mat luot
-        if (interactablesNumber == 0)
+        if (interactableTokenCount == 0)
         {
-            currentPlayer = GetNextPlayer();
-            waitingForRoll = true;
+            MoveToNextPlayer();
         }
         
         //Neu co quan di chuyen duoc thi tien hanh chon
-        if(interactablesNumber == 1)
+        if (interactableTokenCount == 1)
         {
-            foreach (Token token in currentPlayer.tokens)
-            {
-                if(token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN && 
-                    IsSpawnable(dice.value))
-                {
-                    StartCoroutine(PlayWithChosenToken(token));
-                    break;
-                }
-                if(token.tokenStatus == TokenStatus.FREE_TO_MOVE)
-                    if(token.GetParentNodeComponent().interactable == true)
-                    {
-                        StartCoroutine(PlayWithChosenToken(token));
-                        break;
-                    }
-            }
+            InteractWithTokens();
         }
 
+    }
+
+    private void InteractWithTokens()
+    {
+        foreach (Token token in currentPlayer.tokens)
+        {
+            //if token's locked (not in board yet) and dice is 1/6 => get em out
+            if (token.tokenStatus == TokenStatus.LOCKED &&
+                IsSpawnable(dice.value))
+            {
+                StartCoroutine(PlayToken(token));
+                break;
+            }
+            //if otherwise: if token is already in board (moveable) then interact with it
+            if (token.tokenStatus == TokenStatus.MOVEABLE)
+                if (token.GetParentNodeComponent().interactable == true)
+                {
+                    StartCoroutine(PlayToken(token));
+                    break;
+                }
+        }
+    }
+
+    private void MoveToNextPlayer()
+    {
+        currentPlayer = GetNextPlayer();                //get next player in order
+        waitingForRoll = true;
     }
 
     private bool IsSpawnable(int value)
@@ -165,23 +187,27 @@ public class GameManager : MonoBehaviour {
         return (value == 1 || value == 6);
     }
 
-    public IEnumerator PlayWithChosenToken(Token token)
+    public IEnumerator PlayToken(Token token)
     {
         ResetInteractables();
         // The chosen token can only be ready to be spawned (in which case the player rolled 6 or 1) 
         // or a free token that CAN move taking rolled number into account.
 
-        if (token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
+        if (token.tokenStatus == TokenStatus.LOCKED)
         // The chosen token is not yet spawned. This spawns it. Same player will play the next turn.
         {
             token.originalSpawnNodeComponent.interactable = false;
             token.Spawn();
             token.GetParentNodeComponent().AddPlayer(token);
             waitingForRoll = true;
+
+            //Di chuyen node nay
         }
         else
         // The chosen token is free to move in this case.
         {
+            Vector3 oldPosition = token.tokenTransform.position;                //the old position that this obj stand. It's used to revert back in case being blocked
+
             // Finding path minus the last step.
             Vector3 direction;
             Vector3 targetPosition;
@@ -190,11 +216,15 @@ public class GameManager : MonoBehaviour {
             for (int i = 0; i < dice.value - 1; i++)
             {
                 nextNode = nextNode.GetNextNode(currentPlayer.playerType);
+
                 //move towards it
-                if (nextNode.IsEmpty())
+                if (nextNode.IsEmpty())             //no token standing, go ahead!
                     targetPosition = nextNode.GetPosition();
-                else
+                else  //being blocked? or something?
+                {
                     targetPosition = nextNode.GetUpPosition();
+                }
+                
                 while (true)
                 {
                     token.tokenTransform.localScale = Vector3.Slerp(token.tokenTransform.localScale, token.originalScale, smoothness * Time.deltaTime);
@@ -300,11 +330,14 @@ public class GameManager : MonoBehaviour {
         Destroy(deathEffect, 3f);
         opponentToken.tokenTransform.GetComponent<MeshRenderer>().enabled = false;
         opponentToken.Despawn();
+
         yield return new WaitForSeconds(1f);
+
         opponentToken.tokenTransform.localScale = opponentToken.originalScale;
         opponentToken.tokenTransform.GetComponent<MeshRenderer>().enabled = true;
         // Instanciate life effect
         GameObject lifeEffect = null;
+        
         switch (opponentToken.tokenType)
         {
             case PlayerType.BLUE:
@@ -320,6 +353,7 @@ public class GameManager : MonoBehaviour {
                 lifeEffect = Instantiate(yellowLifeEffectPrefab, opponentToken.tokenTransform.position, opponentToken.tokenTransform.rotation);
                 break;
         }
+        
         Destroy(lifeEffect, 3f);
     }
 
@@ -327,15 +361,17 @@ public class GameManager : MonoBehaviour {
     {
         foreach (Token token in currentPlayer.tokens)
         {
-            if(token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
+            if(token.tokenStatus == TokenStatus.LOCKED)
             {
                 token.originalSpawnNodeComponent.interactable = false;
-                token.tokenTransform.GetChild(0).gameObject.SetActive(false);
+                //token.tokenTransform.GetChild(0).gameObject.SetActive(false);
+                token.ShowArrow(false);
             }
-            if(token.tokenStatus == TokenStatus.FREE_TO_MOVE)
+            if(token.tokenStatus == TokenStatus.MOVEABLE)
             {
                 token.GetParentNodeComponent().interactable = false;
-                token.tokenTransform.GetChild(0).gameObject.SetActive(false);
+                //token.tokenTransform.GetChild(0).gameObject.SetActive(false);
+                token.ShowArrow(false);
             }
         }
     }

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class DynamicCamera : MonoBehaviour {
 
+    #region vars
     List<Token> tokens = new List<Token>();
     public RollDiceButton[] buttons;
     GameManager gm;
@@ -23,8 +24,11 @@ public class DynamicCamera : MonoBehaviour {
     public float minZoom;
     public float zoomLimiter;*/
 
-	// Use this for initialization
-	void Start () {
+    #endregion
+
+    #region function
+    // Use this for initialization
+    void Start () {
         gm = GameManager.instance;
         foreach (Player player in gm.players)
         {
@@ -45,7 +49,7 @@ public class DynamicCamera : MonoBehaviour {
 
         foreach (Token token in tokens)
         {
-            if (token.tokenStatus == TokenStatus.FREE_TO_MOVE)
+            if (token.tokenStatus == TokenStatus.MOVEABLE)
             {
                 targets.Add(token.tokenTransform);
             }
@@ -53,7 +57,7 @@ public class DynamicCamera : MonoBehaviour {
 
         foreach (RollDiceButton button in buttons)
         {
-            if (button.isInteractive || gm.currentPlayer.playerType == button.playerType)
+            if (button.isClickable || gm.currentPlayer.playerType == button.playerType)
                 targets.Add(button.transform);
         }
 
@@ -89,4 +93,6 @@ public class DynamicCamera : MonoBehaviour {
         //cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, newZoom, Time.deltaTime);
 
     }
+
+    #endregion
 }
