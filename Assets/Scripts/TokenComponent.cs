@@ -8,17 +8,17 @@ public class TokenComponent : MonoBehaviour {
     public bool isInteractedWith = false;
     public Token tokenInstance;
 
-    private void Start()
-    {
-        if (tokenInstance == null)
-            return;
-    }
+    //private void Start()
+    //{
+    //    if (tokenInstance == null)
+    //        return;
+    //}
 
-    private void Update()
-    {
-        if (tokenInstance == null)
-            return;
-    }
+    //private void Update()
+    //{
+    //    if (tokenInstance == null)
+    //        return;
+    //}
 
     private void OnMouseDown()
     {

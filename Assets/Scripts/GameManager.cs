@@ -57,28 +57,33 @@ public class GameManager : MonoBehaviour {
     public bool waitingForRoll = true;
     public DiceCube dice;
 
+    [Header("UI")]
     public WinningUI winningUI;
     public GameObject gameOverUI;
 
     // Token prefabs
+    [Header("Token prefabs")]
     public GameObject blueTokenPrefab;
     public GameObject greenTokenPrefab;
     public GameObject redTokenPrefab;
     public GameObject yellowTokenPrefab;
 
     // All spawnNodes as transforms
+    [Header("Spawn nodes as Transform")]
     public Transform[] blueSpawnNodesTransforms;
     public Transform[] greenSpawnNodesTransforms;
     public Transform[] redSpawnNodesTransforms;
     public Transform[] yellowSpawnNodesTransforms;
 
     // Death effects prefabs
+    [Header("Death effects prefabs")]
     public GameObject blueDeathEffectPrefab;
     public GameObject greenDeathEffectPrefab;
     public GameObject redDeathEffectPrefab;
     public GameObject yellowDeathEffectPrefab;
 
     // Life effects prefabs
+    [Header("Life effects prefabs")]
     public GameObject blueLifeEffectPrefab;
     public GameObject greenLifeEffectPrefab;
     public GameObject redLifeEffectPrefab;
@@ -95,7 +100,9 @@ public class GameManager : MonoBehaviour {
         Node nextNode;
         foreach (Token token in currentPlayer.tokens)
         {
-            if (token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN && dice.value == 6)
+            //Ra 1 hoac 6 thi xuat co
+            if (token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN &&
+                IsSpawnable(dice.value) )      
             {
                 token.originalSpawnNodeComponent.interactable = true;
                 token.tokenTransform.GetChild(0).gameObject.SetActive(true);
@@ -103,6 +110,7 @@ public class GameManager : MonoBehaviour {
                 continue;
             }
 
+            //Neu di chuyen duoc => 
             if(token.tokenStatus == TokenStatus.FREE_TO_MOVE)
             {
                 nextNode = token.GetParentNodeComponent();
@@ -123,17 +131,20 @@ public class GameManager : MonoBehaviour {
             }
         }
 
+        //Neu khong co quan nao di chuyen dc => mat luot
         if (interactablesNumber == 0)
         {
             currentPlayer = GetNextPlayer();
             waitingForRoll = true;
         }
         
+        //Neu co quan di chuyen duoc thi tien hanh chon
         if(interactablesNumber == 1)
         {
             foreach (Token token in currentPlayer.tokens)
             {
-                if(token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN && dice.value == 6)
+                if(token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN && 
+                    IsSpawnable(dice.value))
                 {
                     StartCoroutine(PlayWithChosenToken(token));
                     break;
@@ -149,10 +160,15 @@ public class GameManager : MonoBehaviour {
 
     }
 
+    private bool IsSpawnable(int value)
+    {
+        return (value == 1 || value == 6);
+    }
+
     public IEnumerator PlayWithChosenToken(Token token)
     {
         ResetInteractables();
-        // The chosen token can only be ready to be spawned (in which case the player rolled 6) 
+        // The chosen token can only be ready to be spawned (in which case the player rolled 6 or 1) 
         // or a free token that CAN move taking rolled number into account.
 
         if (token.tokenStatus == TokenStatus.LOCKED_IN_SPAWN)
